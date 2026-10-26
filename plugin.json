@@ -1,11 +1,27 @@
 {
-  "version": "0.2.2",
+  "version": "1.0.1",
   "name": "Spotify",
   "author": "Sonic Liberation",
-  "description": "Spotube plugin for Spotify metadata",
-  "entryPoint": "SpotifyMetadataProviderPlugin",
-  "apis": ["webview", "localstorage", "timezone"],
-  "abilities": ["authentication", "metadata"],
-  "repository": "https://github.com/sonic-liberation/spotube-plugin-spotify",
-  "pluginApiVersion": "2.0.0"
+  "description": "Spotify plugin for Spotube metadata fetching (Fixed pagination & track duplication)",
+  "entryPoint": "SpotifyMetadataProviderPlugin\n\nclass PatchedPlaylistEndpoint {\n  var inner\n  construct (this.inner)\n\n  fun getPlaylist(id: string) {\n    return inner.getPlaylist(id)\n  }\n\n  fun tracks(id: string, { offset: int, limit: int }) {\n    if (offset != null && offset > 0) {\n      return {\n        limit: limit ?? 20,\n        nextOffset: null,\n        hasMore: false,\n        total: 0,\n        items: []\n      }.toJson()\n    }\n    return inner.tracks(id, offset: 0, limit: 5000).then((data) {\n      data[\"hasMore\"] = false\n      data[\"nextOffset\"] = null\n      data[\"limit\"] = data[\"items\"].length\n      data[\"total\"] = data[\"items\"].length\n      return data\n    })\n  }\n\n  fun create(userId: string, { name: string, description: string, public: bool, collaborative: bool }) {\n    return inner.create(userId, name: name, description: description, public: public, collaborative: collaborative)\n  }\n\n  fun update(playlistId: string, { name: string, description: string, public: bool, collaborative: bool }) {\n    return inner.update(playlistId, name: name, description: description, public: public, collaborative: collaborative)\n  }\n\n  fun deletePlaylist(playlistId: string) {\n    return inner.deletePlaylist(playlistId)\n  }\n\n  fun addTracks(playlistId: string, { trackIds: List, position: int }) {\n    return inner.addTracks(playlistId, trackIds: trackIds, position: position)\n  }\n\n  fun removeTracks(playlistId: string, { trackIds: List }) {\n    return inner.removeTracks(playlistId, trackIds: trackIds)\n  }\n\n  fun save(playlistId: string) {\n    return inner.save(playlistId)\n  }\n\n  fun unsave(playlistId: string) {\n    return inner.unsave(playlistId)\n  }\n}\n\nclass PatchedUserEndpoint {\n  var inner\n  construct (this.inner)\n\n  fun me() {\n    return inner.me()\n  }\n\n  fun savedTracks({ offset: int, limit: int }) {\n    if (offset != null && offset > 0) {\n      return {\n        limit: limit ?? 20,\n        nextOffset: null,\n        hasMore: false,\n        total: 0,\n        items: []\n      }.toJson()\n    }\n    return inner.savedTracks(offset: 0, limit: 5000).then((data) {\n      data[\"hasMore\"] = false\n      data[\"nextOffset\"] = null\n      data[\"limit\"] = data[\"items\"].length\n      data[\"total\"] = data[\"items\"].length\n      return data\n    })\n  }\n\n  fun savedPlaylists({ offset: int, limit: int }) {\n    if (offset != null && offset > 0) {\n      return {\n        limit: limit ?? 20,\n        nextOffset: null,\n        hasMore: false,\n        total: 0,\n        items: []\n      }.toJson()\n    }\n    return inner.savedPlaylists(offset: 0, limit: 500).then((data) {\n      data[\"hasMore\"] = false\n      data[\"nextOffset\"] = null\n      data[\"limit\"] = data[\"items\"].length\n      data[\"total\"] = data[\"items\"].length\n      return data\n    })\n  }\n\n  fun savedAlbums({ offset: int, limit: int }) {\n    return inner.savedAlbums(offset: offset, limit: limit)\n  }\n\n  fun savedArtists({ offset: int, limit: int }) {\n    return inner.savedArtists(offset: offset, limit: limit)\n  }\n\n  fun isSavedPlaylist(playlistId: string) {\n    return inner.isSavedPlaylist(playlistId)\n  }\n\n  fun isSavedTracks(trackIds: List) {\n    return inner.isSavedTracks(trackIds)\n  }\n\n  fun isSavedAlbums(albumIds: List) {\n    return inner.isSavedAlbums(albumIds)\n  }\n\n  fun isSavedArtists(artistIds: List) {\n    return inner.isSavedArtists(artistIds)\n  }\n}\n\nclass PatchedSpotifyPlugin {\n  var inner\n  var auth\n  var api\n  var album\n  var artist\n  var browse\n  var playlist\n  var search\n  var track\n  var user\n  var core\n\n  construct () {\n    inner = plugin.SpotifyMetadataProviderPlugin()\n    auth = inner.auth\n    api = inner.api\n    album = inner.album\n    artist = inner.artist\n    browse = inner.browse\n    playlist = PatchedPlaylistEndpoint(inner.playlist)\n    search = inner.search\n    track = inner.track\n    core = inner.core\n    user = PatchedUserEndpoint(inner.user)\n  }\n}\n\nPlugin = PatchedSpotifyPlugin",
+  "apis": [
+    "webview",
+    "localstorage",
+    "timezone"
+  ],
+  "abilities": [
+    "metadata",
+    "authentication"
+  ],
+  "repository": "https://github.com/julesprog963-stack/spotube-plugin-spotify",
+  "pluginApiVersion": "2.0.0",
+  "apiVersion": "0.0.1",
+  "capabilities": [
+    "network_requests",
+    "persistent_storage",
+    "webview"
+  ],
+  "contact": "sonic.liberation.69@gmail.com",
+  "bugs": "https://github.com/julesprog963-stack/spotube-plugin-spotify/issues",
+  "license": "AGPL-3.0-or-later"
 }

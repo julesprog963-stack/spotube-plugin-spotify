@@ -13,17 +13,48 @@ class UserEndpoint {
   }
 
   fun savedTracks({ offset: int, limit: int }) {
-    return client.user.savedTracks(offset: offset, limit: limit).then(
-      (data) => Converters.paginated(data, (items) => Converters.fullTracks(items))
-    )
+    if (offset != null && offset > 0) {
+      return {
+        limit: limit ?? 20,
+        nextOffset: null,
+        hasMore: false,
+        total: 0,
+        items: []
+      }.toJson()
+    }
+    return client.user.savedTracks(offset: 0, limit: 5000).then((data) {
+      var paginated = Converters.paginated(
+        data,
+        (items) => Converters.fullTracks(items)
+      )
+      paginated["hasMore"] = false
+      paginated["nextOffset"] = null
+      paginated["limit"] = paginated["items"].length
+      paginated["total"] = paginated["items"].length
+      return paginated
+    })
   }
 
   fun savedPlaylists({ offset: int, limit: int }) {
-    return client.user.savedPlaylists(offset: offset, limit: limit).then((data){           
-      return Converters.paginated(
+    if (offset != null && offset > 0) {
+      return {
+        limit: limit ?? 20,
+        nextOffset: null,
+        hasMore: false,
+        total: 0,
+        items: []
+      }.toJson()
+    }
+    return client.user.savedPlaylists(offset: 0, limit: 500).then((data) {
+      var paginated = Converters.paginated(
         data, 
         (items) => Converters.simplePlaylistsFromLibraryV3(data["items"])
       )
+      paginated["hasMore"] = false
+      paginated["nextOffset"] = null
+      paginated["limit"] = paginated["items"].length
+      paginated["total"] = paginated["items"].length
+      return paginated
     })
   }
 

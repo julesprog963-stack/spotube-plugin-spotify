@@ -13,7 +13,16 @@ class PlaylistEndpoint {
   }
 
   fun tracks(id: string, { offset: int, limit: int }) {
-    return client.playlist.tracks(id, offset: offset, limit: limit).then((data) {
+    if (offset != null && offset > 0) {
+      return {
+        limit: limit ?? 20,
+        nextOffset: null,
+        hasMore: false,
+        total: 0,
+        items: []
+      }.toJson()
+    }
+    return client.playlist.tracks(id, offset: 0, limit: 5000).then((data) {
       var paginated = Converters.paginated(
         data, 
         (items) => Converters.fullTracks(items)
@@ -22,6 +31,10 @@ class PlaylistEndpoint {
       // Spotify playlists can contain local tracks which do not have an ID and cannot be played
       // We filter them out here to avoid issues in the client
       paginated["items"] = paginated["items"].where((item) => item != null && item["id"] != null).toList()
+      paginated["hasMore"] = false
+      paginated["nextOffset"] = null
+      paginated["limit"] = paginated["items"].length
+      paginated["total"] = paginated["items"].length
 
       return paginated
     })
