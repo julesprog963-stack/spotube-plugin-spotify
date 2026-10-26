@@ -12,14 +12,12 @@ class TrackEndpoint {
     })
   }
 
-  fun save(trackIds: List) async {
-    await client.track.save(trackIds)
-    return true
+  fun save(trackIds: List) {
+    return client.track.save(trackIds)
   }
 
-  fun unsave(trackIds: List) async {
-    await client.track.unsave(trackIds)
-    return true
+  fun unsave(trackIds: List) {
+    return client.track.unsave(trackIds)
   }
 
   fun radio(trackId: string) {
