@@ -102,23 +102,25 @@ def get_spotify_access_token():
 
 
 def ensure_offline_credentials_valid():
-    """If offline, extend credential expiration in shared_preferences.json so Spotube starts logged in."""
+    """Ensure has_local_helper flag is set on Linux and extend credential expiration when offline."""
     try:
         if not PREFS_PATH.exists():
-            return
-        if check_internet(timeout=1.5):
             return
         with open(PREFS_PATH, "r", encoding="utf-8") as f:
             prefs = json.load(f)
         changed = False
-        future_ms = int((time.time() + 86400 * 30) * 1000)
-        for k, v in list(prefs.items()):
-            if k.endswith(".credentials") and isinstance(v, str):
-                creds = json.loads(v)
-                if creds.get("expiration", 0) < future_ms:
-                    creds["expiration"] = future_ms
-                    prefs[k] = json.dumps(creds)
-                    changed = True
+        if prefs.get("flutter.spotube_plugin.spotify.has_local_helper") is not True:
+            prefs["flutter.spotube_plugin.spotify.has_local_helper"] = True
+            changed = True
+        if not check_internet(timeout=1.5):
+            future_ms = int((time.time() + 86400 * 30) * 1000)
+            for k, v in list(prefs.items()):
+                if k.endswith(".credentials") and isinstance(v, str):
+                    creds = json.loads(v)
+                    if creds.get("expiration", 0) < future_ms:
+                        creds["expiration"] = future_ms
+                        prefs[k] = json.dumps(creds)
+                        changed = True
         if changed:
             tmp = PREFS_PATH.with_suffix(".tmp")
             with open(tmp, "w", encoding="utf-8") as f:
@@ -724,6 +726,7 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 def background_sync_loop():
     global _known_liked_ids
+    ensure_offline_credentials_valid()
     # 1. Initial populate of saved_tracks.json and me.json if online
     try:
         saved = load_cached_saved_tracks()
